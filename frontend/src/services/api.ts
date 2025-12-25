@@ -1,6 +1,7 @@
 import type { Candle, Trade, Market, Exchange, Interval } from '../types';
 
-const API_BASE_URL = 'http://localhost:3000';
+// Use environment variable for production, fallback to localhost for development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
  * Fetch candlestick data for a market

@@ -132,17 +132,52 @@ The frontend is available at `http://localhost:5173` after running `npm run dev`
 
 ## Environment Variables
 
-```bash
-# Database
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/trades
+### Backend (Railway)
 
-# Kalshi (via dflow)
+```bash
+# Database (Neon connection string)
+DATABASE_URL=postgres://user:pass@ep-xxx.neon.tech/neondb?sslmode=require
+
+# Kalshi (via DFlow)
 DFLOW_API_KEY=your_dflow_api_key
 
+# Kalshi Direct API (for market titles)
+KALSHI_API_KEY_ID=your_kalshi_key_id
+KALSHI_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
+
 # Polymarket (via Alchemy)
-ALCHEMY_API_KEY=your_alchemy_api_key
 ALCHEMY_WS_URL=wss://polygon-mainnet.g.alchemy.com/v2/your_alchemy_api_key
+
+# Server
+PORT=3000
+
+# CORS (set to your Vercel frontend URL)
+FRONTEND_URL=https://your-app.vercel.app
 ```
+
+### Frontend (Vercel)
+
+```bash
+VITE_API_URL=https://your-backend.railway.app
+VITE_WS_URL=wss://your-backend.railway.app/ws
+```
+
+## Production Deployment
+
+### Database (Neon)
+1. Create a project at [neon.tech](https://neon.tech)
+2. Copy the connection string (includes `?sslmode=require`)
+3. Set as `DATABASE_URL` in Railway
+
+### Backend (Railway)
+1. Connect GitHub repo to Railway
+2. Set environment variables (see above)
+3. Deploy - Railway auto-detects Node.js
+
+### Frontend (Vercel)
+1. Connect GitHub repo to Vercel
+2. Set `VITE_API_URL` and `VITE_WS_URL` environment variables
+3. Deploy
 
 ## License
 

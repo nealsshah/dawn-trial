@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Exchange, Trade, WSMessage } from '../types';
 
-const WS_URL = 'ws://localhost:3000/ws';
+// Use environment variable for production, fallback to localhost for development
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws';
 
 interface UseWebSocketOptions {
   exchange: Exchange;

@@ -18,7 +18,10 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*', // Set FRONTEND_URL in production
+  credentials: true,
+}));
 app.use(express.json());
 
 // Health check
