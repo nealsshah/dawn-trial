@@ -6,6 +6,7 @@ import db from './db/client';
 import { kalshiIndexer } from './indexers/kalshi-indexer';
 import { polymarketIndexer } from './indexers/polymarket-indexer';
 import { candleAggregator } from './services/candle-aggregator';
+import { tradeWebSocketServer } from './websocket/server';
 import candlesRouter from './api/routes/candles';
 import tradesRouter from './api/routes/trades';
 
@@ -33,9 +34,18 @@ app.get('/health', async (req, res) => {
 app.use('/candles', candlesRouter);
 app.use('/trades', tradesRouter);
 
+// WebSocket stats endpoint
+app.get('/ws/stats', (req, res) => {
+  res.json(tradeWebSocketServer.getStats());
+});
+
+// Initialize WebSocket server
+tradeWebSocketServer.initialize(server);
+
 // Start server
 server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket available at ws://localhost:${PORT}/ws`);
   
   // Start candle aggregator first (listens for trade events)
   candleAggregator.start();

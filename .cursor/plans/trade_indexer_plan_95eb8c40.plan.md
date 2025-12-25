@@ -27,12 +27,12 @@ todos:
       - phase4-candles
   - id: phase6-websocket
     content: Implement WebSocket server for live trade streaming
-    status: pending
+    status: completed
     dependencies:
       - phase2-kalshi
   - id: phase7-frontend
     content: Build React frontend with TradingView charts
-    status: pending
+    status: in_progress
     dependencies:
       - phase5-api
       - phase6-websocket
