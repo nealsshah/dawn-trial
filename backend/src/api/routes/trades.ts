@@ -168,21 +168,26 @@ router.get('/markets', async (req: Request, res: Response) => {
   try {
     const { exchange } = req.query;
 
+    // Calculate trades in last 10 minutes
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    
     let query = `
       SELECT DISTINCT exchange, market_id,
              COUNT(*) as trade_count,
+             COUNT(*) FILTER (WHERE timestamp >= $1) as trades_last_10min,
              MIN(timestamp) as first_trade,
              MAX(timestamp) as last_trade
       FROM trades
     `;
-    const params: any[] = [];
+    const params: any[] = [tenMinutesAgo];
+    let paramIndex = 2;
 
     if (exchange && (exchange === 'polymarket' || exchange === 'kalshi')) {
       params.push(exchange);
-      query += ` WHERE exchange = $${params.length}`;
+      query += ` WHERE exchange = $${paramIndex++}`;
     }
 
-    query += ` GROUP BY exchange, market_id ORDER BY trade_count DESC LIMIT 100`;
+    query += ` GROUP BY exchange, market_id ORDER BY trades_last_10min DESC, trade_count DESC LIMIT 100`;
 
     const result = await db.query(query, params);
 
@@ -218,6 +223,7 @@ router.get('/markets', async (req: Request, res: Response) => {
         marketId: row.market_id,
         title, // null means "use marketId as display name"
         tradeCount: parseInt(row.trade_count, 10),
+        tradesLast10Min: parseInt(row.trades_last_10min || '0', 10),
         firstTrade: row.first_trade.toISOString(),
         lastTrade: row.last_trade.toISOString(),
       };

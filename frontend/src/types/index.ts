@@ -28,9 +28,12 @@ export interface Market {
   marketId: string;
   title: string | null; // Human-readable title from exchange API, null if not available
   tradeCount: number;
+  tradesLast10Min: number;
   firstTrade: string;
   lastTrade: string;
 }
+
+export type MarketSortBy = 'tradesLast10Min' | 'tradeCount';
 
 // WebSocket Types
 export interface WSTradeMessage {

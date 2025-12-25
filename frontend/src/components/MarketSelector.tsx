@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import type { Exchange, Interval, Market } from '../types';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import type { Exchange, Interval, Market, MarketSortBy } from '../types';
 import { fetchMarkets } from '../services/api';
 
 interface MarketSelectorProps {
@@ -23,6 +23,7 @@ export function MarketSelector({
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<MarketSortBy>('tradesLast10Min');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,18 +77,40 @@ export function MarketSelector({
     return id;
   };
 
-  // Filter markets based on search query - search both title and marketId
-  const filteredMarkets = markets.filter((m) => {
-    const query = searchQuery.toLowerCase();
-    const titleMatch = m.title?.toLowerCase().includes(query) || false;
-    const idMatch = m.marketId.toLowerCase().includes(query);
-    return titleMatch || idMatch;
-  });
+  // Filter and sort markets
+  const filteredAndSortedMarkets = useMemo(() => {
+    // First filter
+    const filtered = markets.filter((m) => {
+      const query = searchQuery.toLowerCase();
+      const titleMatch = m.title?.toLowerCase().includes(query) || false;
+      const idMatch = m.marketId.toLowerCase().includes(query);
+      return titleMatch || idMatch;
+    });
+
+    // Then sort
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'tradesLast10Min') {
+        // Sort by trades in last 10 min, then by total trades
+        if (b.tradesLast10Min !== a.tradesLast10Min) {
+          return b.tradesLast10Min - a.tradesLast10Min;
+        }
+        return b.tradeCount - a.tradeCount;
+      } else {
+        // Sort by total trades, then by trades in last 10 min
+        if (b.tradeCount !== a.tradeCount) {
+          return b.tradeCount - a.tradeCount;
+        }
+        return b.tradesLast10Min - a.tradesLast10Min;
+      }
+    });
+
+    return sorted;
+  }, [markets, searchQuery, sortBy]);
 
   // Get selected market display name
   const selectedMarket = markets.find((m) => m.marketId === marketId);
   const displayValue = selectedMarket
-    ? `${getDisplayName(selectedMarket)} (${selectedMarket.tradeCount} trades)`
+    ? `${getDisplayName(selectedMarket)} (${selectedMarket.tradeCount} total, ${selectedMarket.tradesLast10Min} in last 10 min)`
     : '';
 
   const handleSelectMarket = (id: string) => {
@@ -135,7 +158,33 @@ export function MarketSelector({
 
       {/* Searchable Market Dropdown */}
       <div className="selector-group">
-        <label>Market</label>
+        <div className="selector-group-header">
+          <label>Market</label>
+          {!isLoading && markets.length > 0 && (
+            <div className="sort-controls">
+              <button
+                className={`sort-btn ${sortBy === 'tradesLast10Min' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSortBy('tradesLast10Min');
+                }}
+                title="Sort by trades in last 10 minutes"
+              >
+                🔥 Last 10min
+              </button>
+              <button
+                className={`sort-btn ${sortBy === 'tradeCount' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSortBy('tradeCount');
+                }}
+                title="Sort by total trades"
+              >
+                📊 Total
+              </button>
+            </div>
+          )}
+        </div>
         <div className="searchable-dropdown" ref={dropdownRef}>
           <input
             ref={inputRef}
@@ -164,10 +213,10 @@ export function MarketSelector({
           {/* Markets dropdown - show when loaded, dropdown is open, and we have markets */}
           {!isLoading && isDropdownOpen && markets.length > 0 && (
             <div className="dropdown-list">
-              {filteredMarkets.length === 0 ? (
+              {filteredAndSortedMarkets.length === 0 ? (
                 <div className="dropdown-item no-results">No markets match "{searchQuery}"</div>
               ) : (
-                filteredMarkets.map((m) => (
+                filteredAndSortedMarkets.map((m) => (
                   <div
                     key={m.marketId}
                     className={`dropdown-item ${m.marketId === marketId ? 'selected' : ''}`}
@@ -180,7 +229,28 @@ export function MarketSelector({
                         <span className="market-id-subtitle">{formatMarketId(m.marketId)}</span>
                       )}
                     </div>
-                    <span className="trade-count">{m.tradeCount} trades</span>
+                    <div className="trade-counts">
+                      <span className="trade-count-primary">
+                        {sortBy === 'tradesLast10Min' ? (
+                          <>
+                            <span className="trade-count-value">{m.tradesLast10Min}</span>
+                            <span className="trade-count-label"> in last 10 min</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="trade-count-value">{m.tradeCount}</span>
+                            <span className="trade-count-label"> total</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="trade-count-secondary">
+                        {sortBy === 'tradesLast10Min' ? (
+                          <>{m.tradeCount} total</>
+                        ) : (
+                          <>{m.tradesLast10Min} in last 10 min</>
+                        )}
+                      </span>
+                    </div>
                   </div>
                 ))
               )}
