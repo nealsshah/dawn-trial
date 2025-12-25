@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Exchange, Interval } from './types';
 import { Chart } from './components/Chart';
 import { MarketSelector } from './components/MarketSelector';
-import { PerformanceStats } from './components/PerformanceStats';
+// import { PerformanceStats } from './components/PerformanceStats';
 import { TradesTable } from './components/TradesTable';
 import { healthCheck } from './services/api';
 import './App.css';
@@ -57,7 +57,7 @@ function App() {
       </div>
 
       {/* Performance Stats */}
-      {isBackendOnline && <PerformanceStats />}
+      {/* {isBackendOnline && <PerformanceStats />} */}
 
       {/* Main Content */}
       <main className="main-content">
