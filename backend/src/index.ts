@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import db from './db/client';
 import { kalshiIndexer } from './indexers/kalshi-indexer';
 import { polymarketIndexer } from './indexers/polymarket-indexer';
+import { candleAggregator } from './services/candle-aggregator';
+import candlesRouter from './api/routes/candles';
+import tradesRouter from './api/routes/trades';
 
 dotenv.config();
 
@@ -26,11 +29,21 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// API Routes
+app.use('/candles', candlesRouter);
+app.use('/trades', tradesRouter);
+
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   
-  // Start indexers
+  // Start candle aggregator first (listens for trade events)
+  candleAggregator.start();
+  
+  // Backfill candles from existing trades
+  await candleAggregator.backfillCandles();
+  
+  // Start indexers (emit trade events)
   kalshiIndexer.start();
   polymarketIndexer.start();
 });
@@ -40,6 +53,7 @@ process.on('SIGTERM', () => {
   console.log('Shutting down...');
   kalshiIndexer.stop();
   polymarketIndexer.stop();
+  candleAggregator.stop();
   server.close();
   process.exit(0);
 });

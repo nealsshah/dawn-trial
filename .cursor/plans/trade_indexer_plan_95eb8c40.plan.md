@@ -17,12 +17,12 @@ todos:
       - phase1-setup
   - id: phase4-candles
     content: Build candlestick aggregation service for 1s/1m/1h intervals
-    status: pending
+    status: completed
     dependencies:
       - phase2-kalshi
   - id: phase5-api
     content: Create REST API endpoints for candles and trades
-    status: pending
+    status: completed
     dependencies:
       - phase4-candles
   - id: phase6-websocket
