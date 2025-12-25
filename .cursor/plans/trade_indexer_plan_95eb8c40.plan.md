@@ -32,7 +32,7 @@ todos:
       - phase2-kalshi
   - id: phase7-frontend
     content: Build React frontend with TradingView charts
-    status: in_progress
+    status: completed
     dependencies:
       - phase5-api
       - phase6-websocket

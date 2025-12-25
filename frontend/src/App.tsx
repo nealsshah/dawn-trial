@@ -1,35 +1,97 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import type { Exchange, Interval } from './types';
+import { Chart } from './components/Chart';
+import { MarketSelector } from './components/MarketSelector';
+import { healthCheck } from './services/api';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [exchange, setExchange] = useState<Exchange>('kalshi');
+  const [marketId, setMarketId] = useState<string>('');
+  const [interval, setInterval] = useState<Interval>('1m');
+  const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
+
+  // Check backend health on mount
+  useEffect(() => {
+    healthCheck().then(setIsBackendOnline);
+    
+    // Periodic health check
+    const intervalId = window.setInterval(() => {
+      healthCheck().then(setIsBackendOnline);
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app">
+      {/* Header */}
+      <header className="app-header">
+        <h1>
+          <span className="logo">📈</span>
+          Prediction Market Charts
+        </h1>
+        <div className="header-status">
+          <span className={`backend-status ${isBackendOnline ? 'online' : 'offline'}`}>
+            {isBackendOnline === null
+              ? '⏳ Checking backend...'
+              : isBackendOnline
+              ? '🟢 Backend online'
+              : '🔴 Backend offline'}
+          </span>
+        </div>
+      </header>
+
+      {/* Controls */}
+      <div className="controls">
+        <MarketSelector
+          exchange={exchange}
+          marketId={marketId}
+          interval={interval}
+          onExchangeChange={setExchange}
+          onMarketChange={setMarketId}
+          onIntervalChange={setInterval}
+        />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+
+      {/* Main Content */}
+      <main className="main-content">
+        {!isBackendOnline ? (
+          <div className="placeholder">
+            <div className="placeholder-icon">⚠️</div>
+            <h2>Backend Not Available</h2>
+            <p>
+              Make sure the backend server is running on{' '}
+              <code>http://localhost:3000</code>
+            </p>
+            <pre>cd backend && npm run dev</pre>
+          </div>
+        ) : !marketId ? (
+          <div className="placeholder">
+            <div className="placeholder-icon">👆</div>
+            <h2>Select a Market</h2>
+            <p>Choose an exchange and market from the dropdown above to view the chart.</p>
+          </div>
+        ) : (
+          <Chart exchange={exchange} marketId={marketId} interval={interval} />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="app-footer">
+        <span>
+          Data from{' '}
+          <a href="https://kalshi.com" target="_blank" rel="noopener noreferrer">
+            Kalshi
+          </a>{' '}
+          &{' '}
+          <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer">
+            Polymarket
+          </a>
+        </span>
+      </footer>
+    </div>
+  );
 }
 
-export default App
+export default App;

@@ -89,7 +89,7 @@ Get latest trades for a market.
 
 ## WebSocket
 
-Connect to `ws://localhost:3000` for live trade updates.
+Connect to `ws://localhost:3000/ws` for live trade updates.
 
 **Subscribe to a market:**
 ```json
@@ -100,6 +100,17 @@ Connect to `ws://localhost:3000` for live trade updates.
 ```json
 { "type": "trade", "data": { "exchange": "kalshi", "marketId": "...", "price": "0.55", ... } }
 ```
+
+## Frontend
+
+The frontend is available at `http://localhost:5173` after running `npm run dev` in the frontend directory.
+
+**Features:**
+- Exchange toggle (Kalshi / Polymarket)
+- Market selector dropdown
+- Interval selector (1s, 1m, 1h)
+- Real-time candlestick chart with TradingView
+- Live WebSocket connection for trade updates
 
 ## Project Structure
 
@@ -119,10 +130,20 @@ Connect to `ws://localhost:3000` for live trade updates.
 └── docker-compose.yml
 ```
 
+## Environment Variables
+
+```bash
+# Database
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/trades
+
+# Kalshi (via dflow)
+DFLOW_API_KEY=your_dflow_api_key
+
+# Polymarket (via Alchemy)
+ALCHEMY_API_KEY=your_alchemy_api_key
+ALCHEMY_WS_URL=wss://polygon-mainnet.g.alchemy.com/v2/your_alchemy_api_key
+```
+
 ## License
 
 MIT
-
-# dawn-takehome
-# dawn-trial-2
-# dawn-trial-2
