@@ -528,6 +528,15 @@ select:disabled {
   margin-left: auto;
   color: var(--text-muted);
   font-family: 'SF Mono', Monaco, monospace;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trade-time {
+  color: var(--text-muted);
+  opacity: 0.7;
+  font-size: 0.85em;
 }
 
 .chart {

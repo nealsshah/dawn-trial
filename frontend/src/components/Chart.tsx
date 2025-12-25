@@ -39,6 +39,19 @@ function getIntervalSeconds(interval: Interval): number {
   }
 }
 
+// Format relative time (e.g., "2s ago", "1m ago")
+function formatRelativeTime(timestamp: Date | string): string {
+  const now = Date.now();
+  const then = new Date(timestamp).getTime();
+  const diffSec = Math.floor((now - then) / 1000);
+  
+  if (diffSec < 0) return 'just now';
+  if (diffSec < 60) return `${diffSec}s ago`;
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
+}
+
 export function Chart({ exchange, marketId, interval }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -46,6 +59,7 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const candlesRef = useRef<Map<number, CandlestickData<Time>>>(new Map());
+  const [, setTick] = useState(0); // Force re-render for relative time updates
   
   // Keep interval in a ref to avoid stale closures
   const intervalRef = useRef(interval);
@@ -103,6 +117,13 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
     marketId,
     onTrade: handleTrade,
   });
+
+  // Update relative time display every second
+  useEffect(() => {
+    if (!lastTrade) return;
+    const timer = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, [lastTrade]);
 
   // Initialize chart
   useEffect(() => {
@@ -220,6 +241,7 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
         {lastTrade && (
           <span className="last-trade">
             Last: ${parseFloat(lastTrade.price).toFixed(4)} ({lastTrade.side})
+            <span className="trade-time">· {formatRelativeTime(lastTrade.timestamp)}</span>
           </span>
         )}
       </div>
