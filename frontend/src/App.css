@@ -536,7 +536,7 @@ select:disabled {
   font-family: 'SF Mono', Monaco, monospace;
   font-size: 0.875rem;
   color: var(--accent-secondary);
-}
+  }
 
 /* Chart with Trades Container */
 .chart-with-trades {
@@ -612,6 +612,60 @@ select:disabled {
   color: var(--text-muted);
   opacity: 0.7;
   font-size: 0.85em;
+}
+
+/* OHLCV Legend */
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(10, 10, 15, 0.8);
+  font-size: 0.75rem;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  border-bottom: 1px solid var(--border-color);
+  min-height: 32px;
+}
+
+.legend-time {
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding-right: 0.5rem;
+  border-right: 1px solid var(--border-color);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.legend-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.legend-value {
+  color: var(--text-primary);
+}
+
+.legend-change {
+  margin-left: auto;
+  font-weight: 500;
+}
+
+.legend-change.positive {
+  color: var(--success);
+}
+
+.legend-change.negative {
+  color: var(--error);
+}
+
+.legend-hint {
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: inherit;
 }
 
 .chart {
@@ -825,6 +879,27 @@ select:disabled {
     width: 100%;
     margin-top: 0.25rem;
     font-size: 0.75rem;
+  }
+
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+  }
+
+  .legend-time {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
+  }
+
+  .legend-change {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.125rem;
   }
 
   .placeholder {

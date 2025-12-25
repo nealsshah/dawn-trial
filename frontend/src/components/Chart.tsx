@@ -7,6 +7,7 @@ import type {
   IChartApi,
   ISeriesApi,
   CandlestickData,
+  HistogramData,
   Time,
 } from 'lightweight-charts';
 import type { Candle, Trade, Exchange, Interval } from '../types';
@@ -22,8 +23,13 @@ interface ChartProps {
 // Get timezone offset in seconds (negative for EST/EDT)
 const TIMEZONE_OFFSET_SECONDS = new Date().getTimezoneOffset() * 60;
 
+// Chart candle with volume for internal tracking
+interface ChartCandleWithVolume extends CandlestickData<Time> {
+  volume: number;
+}
+
 // Convert our Candle to TradingView format with local timezone adjustment
-function toChartCandle(candle: Candle): CandlestickData<Time> {
+function toChartCandle(candle: Candle): ChartCandleWithVolume {
   // TradingView expects Unix timestamps in seconds
   // We subtract the timezone offset to display in local time
   const utcSeconds = new Date(candle.openTime).getTime() / 1000;
@@ -35,6 +41,17 @@ function toChartCandle(candle: Candle): CandlestickData<Time> {
     high: parseFloat(candle.high),
     low: parseFloat(candle.low),
     close: parseFloat(candle.close),
+    volume: parseFloat(candle.volume),
+  };
+}
+
+// Convert candle to volume histogram bar
+function toVolumeBar(candle: ChartCandleWithVolume): HistogramData<Time> {
+  const isUp = candle.close >= candle.open;
+  return {
+    time: candle.time,
+    value: candle.volume,
+    color: isUp ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)', // green/red with transparency
   };
 }
 
@@ -60,14 +77,28 @@ function formatRelativeTime(timestamp: Date | string): string {
   return `${Math.floor(diffSec / 86400)}d ago`;
 }
 
+// OHLCV data for legend display
+interface OHLCVData {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  change: number;
+  changePercent: number;
+}
+
 export function Chart({ exchange, marketId, interval }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const candlesRef = useRef<Map<number, CandlestickData<Time>>>(new Map());
+  const candlesRef = useRef<Map<number, ChartCandleWithVolume>>(new Map());
   const [, setTick] = useState(0); // Force re-render for relative time updates
+  const [hoveredData, setHoveredData] = useState<OHLCVData | null>(null);
   
   // Keep interval in a ref to avoid stale closures
   const intervalRef = useRef(interval);
@@ -78,6 +109,7 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
   // Handle live trade updates - use useCallback with stable deps
   const handleTrade = useCallback((trade: Trade) => {
     const series = seriesRef.current;
+    const volumeSeries = volumeSeriesRef.current;
     if (!series) {
       console.log('[Chart] No series ref, skipping trade update');
       return;
@@ -90,35 +122,44 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
     const intervalSec = getIntervalSeconds(currentInterval);
     const candleTime = Math.floor(tradeTime / intervalSec) * intervalSec;
     const price = parseFloat(trade.price);
+    const quantity = parseFloat(trade.quantity);
 
-    console.log(`[Chart] Processing trade: price=${price}, candleTime=${candleTime}, interval=${currentInterval}`);
+    console.log(`[Chart] Processing trade: price=${price}, qty=${quantity}, candleTime=${candleTime}, interval=${currentInterval}`);
 
     const existing = candlesRef.current.get(candleTime);
 
     if (existing) {
       // Update existing candle
-      const updated: CandlestickData<Time> = {
+      const updated: ChartCandleWithVolume = {
         time: candleTime as Time,
         open: existing.open,
         high: Math.max(existing.high, price),
         low: Math.min(existing.low, price),
         close: price,
+        volume: existing.volume + quantity,
       };
       candlesRef.current.set(candleTime, updated);
       series.update(updated);
-      console.log(`[Chart] Updated candle: O=${updated.open} H=${updated.high} L=${updated.low} C=${updated.close}`);
+      if (volumeSeries) {
+        volumeSeries.update(toVolumeBar(updated));
+      }
+      console.log(`[Chart] Updated candle: O=${updated.open} H=${updated.high} L=${updated.low} C=${updated.close} V=${updated.volume}`);
     } else {
       // Create new candle
-      const newCandle: CandlestickData<Time> = {
+      const newCandle: ChartCandleWithVolume = {
         time: candleTime as Time,
         open: price,
         high: price,
         low: price,
         close: price,
+        volume: quantity,
       };
       candlesRef.current.set(candleTime, newCandle);
       series.update(newCandle);
-      console.log(`[Chart] Created new candle: price=${price}, time=${candleTime}`);
+      if (volumeSeries) {
+        volumeSeries.update(toVolumeBar(newCandle));
+      }
+      console.log(`[Chart] Created new candle: price=${price}, volume=${quantity}, time=${candleTime}`);
     }
   }, []); // Empty deps - uses refs internally
 
@@ -180,8 +221,70 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
       wickDownColor: '#ef4444',
     });
 
+    // Add volume histogram series
+    const volumeSeries = chart.addHistogramSeries({
+      color: '#6366f1',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: 'volume', // Separate price scale for volume
+    });
+
+    // Configure volume price scale (bottom 20% of chart)
+    chart.priceScale('volume').applyOptions({
+      scaleMargins: {
+        top: 0.8, // Volume takes bottom 20%
+        bottom: 0,
+      },
+    });
+
     chartRef.current = chart;
     seriesRef.current = series;
+    volumeSeriesRef.current = volumeSeries;
+
+    // Subscribe to crosshair move to show OHLCV legend
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.seriesData) {
+        setHoveredData(null);
+        return;
+      }
+
+      const candleData = param.seriesData.get(series) as CandlestickData<Time> | undefined;
+      if (!candleData) {
+        setHoveredData(null);
+        return;
+      }
+
+      // Get volume from our stored data
+      const timeNum = param.time as number;
+      const storedCandle = candlesRef.current.get(timeNum);
+      const volume = storedCandle?.volume ?? 0;
+
+      // Format time based on interval
+      const date = new Date((timeNum + TIMEZONE_OFFSET_SECONDS) * 1000);
+      let timeStr: string;
+      if (intervalRef.current === '1s') {
+        timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } else if (intervalRef.current === '1m') {
+        timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      } else {
+        timeStr = date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+
+      const change = candleData.close - candleData.open;
+      const changePercent = (change / candleData.open) * 100;
+
+      setHoveredData({
+        time: timeStr,
+        open: candleData.open,
+        high: candleData.high,
+        low: candleData.low,
+        close: candleData.close,
+        volume,
+        change,
+        changePercent,
+      });
+    });
 
     // Handle resize
     const handleResize = () => {
@@ -201,6 +304,7 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      volumeSeriesRef.current = null;
     };
   }, [interval]);
 
@@ -228,7 +332,15 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
           candlesRef.current.set(c.time as number, c);
         });
 
+        // Set candlestick data
         seriesRef.current.setData(chartCandles);
+        
+        // Set volume data
+        if (volumeSeriesRef.current) {
+          const volumeBars = chartCandles.map(toVolumeBar);
+          volumeSeriesRef.current.setData(volumeBars);
+        }
+        
         chartRef.current?.timeScale().fitContent();
         setIsLoading(false);
         
@@ -253,6 +365,40 @@ export function Chart({ exchange, marketId, interval }: ChartProps) {
             Last: ${parseFloat(lastTrade.price).toFixed(4)} ({lastTrade.side})
             <span className="trade-time">· {formatRelativeTime(lastTrade.timestamp)}</span>
           </span>
+        )}
+      </div>
+
+      {/* OHLCV Legend - shows when hovering over candles */}
+      <div className="chart-legend">
+        {hoveredData ? (
+          <>
+            <span className="legend-time">{hoveredData.time}</span>
+            <span className="legend-item">
+              <span className="legend-label">O</span>
+              <span className="legend-value">{hoveredData.open.toFixed(4)}</span>
+            </span>
+            <span className="legend-item">
+              <span className="legend-label">H</span>
+              <span className="legend-value">{hoveredData.high.toFixed(4)}</span>
+            </span>
+            <span className="legend-item">
+              <span className="legend-label">L</span>
+              <span className="legend-value">{hoveredData.low.toFixed(4)}</span>
+            </span>
+            <span className="legend-item">
+              <span className="legend-label">C</span>
+              <span className="legend-value">{hoveredData.close.toFixed(4)}</span>
+            </span>
+            <span className="legend-item">
+              <span className="legend-label">V</span>
+              <span className="legend-value">{hoveredData.volume.toFixed(2)}</span>
+            </span>
+            <span className={`legend-change ${hoveredData.change >= 0 ? 'positive' : 'negative'}`}>
+              {hoveredData.change >= 0 ? '+' : ''}{hoveredData.change.toFixed(4)} ({hoveredData.changePercent.toFixed(2)}%)
+            </span>
+          </>
+        ) : (
+          <span className="legend-hint">Hover over chart to see OHLCV</span>
         )}
       </div>
 

@@ -65,10 +65,10 @@ function App() {
           <div className="placeholder">
             <div className="placeholder-icon">⚠️</div>
             <h2>Backend Not Available</h2>
-            <p>
+        <p>
               Unable to connect to the backend service. Please try again later.
-            </p>
-          </div>
+        </p>
+      </div>
         ) : !marketId ? (
           <div className="placeholder">
             <div className="placeholder-icon">👆</div>
