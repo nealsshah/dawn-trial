@@ -487,19 +487,31 @@ select:disabled {
   color: var(--accent-secondary);
 }
 
+/* Chart with Trades Container */
+.chart-with-trades {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
 /* Chart Container */
 .chart-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
-  border-radius: 0.75rem;
-  border: 1px solid var(--border-color);
   overflow: hidden;
   min-height: 500px;
   position: relative;
   width: 100%;
   max-width: 100%;
+  /* Remove border-radius when inside chart-with-trades */
+  border-radius: 0;
+  border: none;
 }
 
 .chart-status {
@@ -730,9 +742,13 @@ select:disabled {
     padding: 0.75rem 1rem;
   }
 
+  .chart-with-trades {
+    border-radius: 0.5rem;
+  }
+
   .chart-container {
     min-height: 400px;
-    border-radius: 0.5rem;
+    border-radius: 0;
   }
 
   .chart-status {

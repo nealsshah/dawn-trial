@@ -3,6 +3,7 @@ import type { Exchange, Interval } from './types';
 import { Chart } from './components/Chart';
 import { MarketSelector } from './components/MarketSelector';
 import { PerformanceStats } from './components/PerformanceStats';
+import { TradesTable } from './components/TradesTable';
 import { healthCheck } from './services/api';
 import './App.css';
 
@@ -75,7 +76,10 @@ function App() {
             <p>Choose an exchange and market from the dropdown above to view the chart.</p>
           </div>
         ) : (
-          <Chart exchange={exchange} marketId={marketId} interval={interval} />
+          <div className="chart-with-trades">
+            <Chart exchange={exchange} marketId={marketId} interval={interval} />
+            <TradesTable exchange={exchange} marketId={marketId} />
+          </div>
         )}
       </main>
 
