@@ -319,7 +319,3 @@ DO UPDATE SET
 | Phase | Est. Time | Dependency ||-------|-----------|------------|| 1. Setup + DB | 1 hour | None || 2. Kalshi Indexer | 1.5 hours | Phase 1 || 3. Polymarket Indexer | 2 hours | Phase 1 || 4. Candle Aggregation | 1 hour | Phase 2 or 3 || 5. REST API | 1 hour | Phase 4 || 6. WebSocket Server | 1 hour | Phase 2 or 3 || 7. Frontend | 2 hours | Phase 5 + 6 |**Total:** ~10 hours---
 
 ## Getting Started
-
-After approval, we'll begin with Phase 1:
-
-1. Initialize `backend/` with TypeScript, Express, and dependencies

@@ -171,7 +171,7 @@ select:disabled {
 /* Searchable Dropdown */
 .searchable-dropdown {
   position: relative;
-  min-width: 320px;
+  min-width: 400px;
 }
 
 .market-search-input {
@@ -259,10 +259,29 @@ select:disabled {
   background: transparent;
 }
 
+.dropdown-item .market-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .dropdown-item .market-name {
   font-size: 0.875rem;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-item .market-id-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
   font-family: 'SF Mono', Monaco, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown-item .trade-count {
@@ -271,6 +290,8 @@ select:disabled {
   background: var(--bg-primary);
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Scrollbar styling for dropdown */

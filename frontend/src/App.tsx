@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Exchange, Interval } from './types';
 import { Chart } from './components/Chart';
 import { MarketSelector } from './components/MarketSelector';
+import { PerformanceStats } from './components/PerformanceStats';
 import { healthCheck } from './services/api';
 import './App.css';
 
@@ -53,6 +54,9 @@ function App() {
           onIntervalChange={setInterval}
         />
       </div>
+
+      {/* Performance Stats */}
+      {isBackendOnline && <PerformanceStats />}
 
       {/* Main Content */}
       <main className="main-content">

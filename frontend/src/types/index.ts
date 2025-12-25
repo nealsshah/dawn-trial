@@ -26,6 +26,7 @@ export interface Trade {
 export interface Market {
   exchange: Exchange;
   marketId: string;
+  title: string | null; // Human-readable title from exchange API, null if not available
   tradeCount: number;
   firstTrade: string;
   lastTrade: string;

@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import db from '../db/client';
 import { Trade } from '../types';
 import { tradeEmitter } from '../events/trade-emitter';
+import { performanceTracker } from '../services/performance-tracker';
 
 const KALSHI_WS_URL = 'wss://a.prediction-markets-api.dflow.net/api/v1/ws';
 const DFLOW_API_KEY = process.env.DFLOW_API_KEY || '';
@@ -134,7 +135,12 @@ class KalshiIndexer {
         };
 
         try {
+            const indexedAt = new Date();
             await this.insertTrade(trade);
+
+            // Track performance metrics
+            performanceTracker.recordTrade('kalshi', trade.timestamp, indexedAt);
+
             // Log the trade
             console.log(`📊 [Kalshi] Trade: ${trade.side.toUpperCase()} ${trade.quantity} @ $${trade.price} | ${trade.marketId}`);
             // Emit trade for WebSocket broadcasting

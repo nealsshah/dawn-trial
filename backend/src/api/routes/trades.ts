@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import db from '../../db/client';
+import { getKalshiMarketTitles } from '../../services/market-metadata';
 
 const router = Router();
 
@@ -185,13 +186,32 @@ router.get('/markets', async (req: Request, res: Response) => {
 
     const result = await db.query(query, params);
 
-    const markets = result.rows.map((row) => ({
-      exchange: row.exchange,
-      marketId: row.market_id,
-      tradeCount: parseInt(row.trade_count, 10),
-      firstTrade: row.first_trade.toISOString(),
-      lastTrade: row.last_trade.toISOString(),
-    }));
+    // Fetch market titles for Kalshi markets
+    const kalshiTickers = result.rows
+      .filter((row) => row.exchange === 'kalshi')
+      .map((row) => row.market_id);
+    
+    const kalshiTitles = kalshiTickers.length > 0 
+      ? await getKalshiMarketTitles(kalshiTickers)
+      : new Map<string, string>();
+
+    const markets = result.rows.map((row) => {
+      // Get title from cache/API, fallback to marketId if not found
+      let title: string | null = null;
+      if (row.exchange === 'kalshi') {
+        title = kalshiTitles.get(row.market_id) || null;
+      }
+      // For polymarket, title remains null (as requested by user)
+
+      return {
+        exchange: row.exchange,
+        marketId: row.market_id,
+        title, // null means "use marketId as display name"
+        tradeCount: parseInt(row.trade_count, 10),
+        firstTrade: row.first_trade.toISOString(),
+        lastTrade: row.last_trade.toISOString(),
+      };
+    });
 
     return res.json({ data: markets });
   } catch (error) {

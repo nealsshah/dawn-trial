@@ -3,6 +3,7 @@ import { polygon } from 'viem/chains';
 import db from '../db/client';
 import { Trade } from '../types';
 import { tradeEmitter } from '../events/trade-emitter';
+import { performanceTracker } from '../services/performance-tracker';
 import path from 'path';
 import dotenv from 'dotenv';
 
@@ -170,7 +171,7 @@ class PolymarketIndexer {
       // In Polymarket: larger asset IDs are outcome tokens, 0 or small IDs are USDC
       // Actually in CTF Exchange, makerAssetId and takerAssetId are the ERC1155 token IDs
       // USDC has a special representation - let's check if one of the amounts is much larger
-      
+
       const makerAmount = args.makerAmountFilled;
       const takerAmount = args.takerAmountFilled;
       const makerAssetId = args.makerAssetId;
@@ -180,7 +181,7 @@ class PolymarketIndexer {
       // Prices in Polymarket are 0-1 (representing probability)
       // If maker is selling outcome tokens for USDC: maker sends outcome, taker sends USDC
       // If maker is buying outcome tokens with USDC: maker sends USDC, taker sends outcome
-      
+
       // For simplicity, we'll use the outcome token ID as the market ID
       // The larger asset ID is typically the outcome token
       const isOutcomeTokenMaker = makerAssetId > takerAssetId;
@@ -190,7 +191,7 @@ class PolymarketIndexer {
 
       // Price = USDC amount / outcome amount (in 6 decimal USDC vs 6 decimal outcome tokens)
       // Both USDC.e and outcome tokens use 6 decimals on Polymarket
-      const price = outcomeAmount > 0n 
+      const price = outcomeAmount > 0n
         ? Number(usdcAmount) / Number(outcomeAmount)
         : 0;
 
@@ -216,17 +217,21 @@ class PolymarketIndexer {
       // Try to get block timestamp for more accurate timing
       if (this.client && log.blockNumber) {
         try {
-          const block = await this.client.getBlock({ blockNumber: log.blockNumber });
+          ({ blockNumber: log.blockNumber });
           trade.timestamp = new Date(Number(block.timestamp) * 1000);
         } catch {
           // Use current time if block fetch fails
         }
       }
 
+      const indexedAt = new Date();
       await this.insertTrade(trade);
-      
+
+      // Track performance metrics
+      performanceTracker.recordTrade('polymarket', trade.timestamp, indexedAt);
+
       console.log(`🔮 [Polymarket] Trade: ${trade.side.toUpperCase()} ${parseFloat(trade.quantity).toFixed(2)} @ $${trade.price} | Token: ${trade.marketId.slice(0, 12)}... | tx: ${txHash?.slice(0, 10)}...`);
-      
+
       tradeEmitter.emit('trade', trade);
     } catch (error) {
       console.error('[Polymarket] Error processing OrderFilled:', error);

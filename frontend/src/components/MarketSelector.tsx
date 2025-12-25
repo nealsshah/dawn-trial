@@ -57,7 +57,17 @@ export function MarketSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Format market ID for display
+  // Get display name for a market - prefer title over marketId
+  const getDisplayName = (market: Market): string => {
+    // If title is available, use it
+    if (market.title) {
+      return market.title;
+    }
+    // Otherwise, format the marketId
+    return formatMarketId(market.marketId);
+  };
+
+  // Format market ID for display (truncate long IDs like Polymarket)
   const formatMarketId = (id: string): string => {
     // Kalshi IDs are readable, Polymarket IDs are long numbers
     if (id.length > 30) {
@@ -66,15 +76,18 @@ export function MarketSelector({
     return id;
   };
 
-  // Filter markets based on search query
-  const filteredMarkets = markets.filter((m) =>
-    m.marketId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter markets based on search query - search both title and marketId
+  const filteredMarkets = markets.filter((m) => {
+    const query = searchQuery.toLowerCase();
+    const titleMatch = m.title?.toLowerCase().includes(query) || false;
+    const idMatch = m.marketId.toLowerCase().includes(query);
+    return titleMatch || idMatch;
+  });
 
   // Get selected market display name
   const selectedMarket = markets.find((m) => m.marketId === marketId);
   const displayValue = selectedMarket
-    ? `${formatMarketId(selectedMarket.marketId)} (${selectedMarket.tradeCount} trades)`
+    ? `${getDisplayName(selectedMarket)} (${selectedMarket.tradeCount} trades)`
     : '';
 
   const handleSelectMarket = (id: string) => {
@@ -128,7 +141,7 @@ export function MarketSelector({
             ref={inputRef}
             type="text"
             className="market-search-input"
-            placeholder={isLoading ? 'Loading markets...' : 'Search markets...'}
+            placeholder={isLoading ? 'Loading markets...' : 'Search by title or ID...'}
             value={isDropdownOpen ? searchQuery : displayValue}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
@@ -149,7 +162,13 @@ export function MarketSelector({
                     className={`dropdown-item ${m.marketId === marketId ? 'selected' : ''}`}
                     onClick={() => handleSelectMarket(m.marketId)}
                   >
-                    <span className="market-name">{formatMarketId(m.marketId)}</span>
+                    <div className="market-info">
+                      <span className="market-name">{getDisplayName(m)}</span>
+                      {/* Show marketId as subtitle if we have a title */}
+                      {m.title && (
+                        <span className="market-id-subtitle">{formatMarketId(m.marketId)}</span>
+                      )}
+                    </div>
                     <span className="trade-count">{m.tradeCount} trades</span>
                   </div>
                 ))

@@ -6,6 +6,7 @@ import db from './db/client';
 import { kalshiIndexer } from './indexers/kalshi-indexer';
 import { polymarketIndexer } from './indexers/polymarket-indexer';
 import { candleAggregator } from './services/candle-aggregator';
+import { performanceTracker } from './services/performance-tracker';
 import { tradeWebSocketServer } from './websocket/server';
 import candlesRouter from './api/routes/candles';
 import tradesRouter from './api/routes/trades';
@@ -37,6 +38,22 @@ app.use('/trades', tradesRouter);
 // WebSocket stats endpoint
 app.get('/ws/stats', (req, res) => {
   res.json(tradeWebSocketServer.getStats());
+});
+
+// Performance stats endpoint
+app.get('/stats', async (req, res) => {
+  try {
+    const stats = await performanceTracker.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('[API] Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Quick stats for header display
+app.get('/stats/quick', (req, res) => {
+  res.json(performanceTracker.getQuickStats());
 });
 
 // Initialize WebSocket server
