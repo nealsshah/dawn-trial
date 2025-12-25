@@ -177,7 +177,3 @@ VITE_WS_URL=wss://your-backend.railway.app/ws
 1. Connect GitHub repo to Vercel
 2. Set `VITE_API_URL` and `VITE_WS_URL` environment variables
 3. Deploy
-
-## License
-
-MIT
