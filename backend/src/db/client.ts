@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, QueryResultRow } from 'pg';
 import path from 'path';
 import dotenv from 'dotenv';
 
@@ -26,7 +26,7 @@ pool.on('error', (err) => {
 });
 
 export const db = {
-  query: <T = any>(text: string, params?: any[]) => pool.query<T>(text, params),
+  query: <T extends QueryResultRow = any>(text: string, params?: any[]) => pool.query<T>(text, params),
   getClient: (): Promise<PoolClient> => pool.connect(),
   pool,
 };

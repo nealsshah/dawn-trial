@@ -76,7 +76,7 @@ export async function fetchPolymarketByTokenId(
       return null;
     }
 
-    const data: GammaApiResponse = await response.json();
+    const data = (await response.json()) as GammaApiResponse;
     
     if (data.length === 0) {
       return null;
